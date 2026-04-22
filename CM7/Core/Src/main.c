@@ -70,36 +70,19 @@ void SystemClock_Config(void);
 // HRTIM
 float value = 0.0f;
 float percent = 50.0f;
-void HRTIM_Update_Duty_Distributed(uint32_t duty_pct, uint32_t start_off_pct)
+
+void HRTIM_Update_Duty_Distributed(uint32_t duty_pct)
 {
-  // 1. Obter o valor do período atual do Timer A (ex: 5000)
-  uint32_t period = hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_A].PERxR;
+	int duty = 100 - duty_pct;
+	int periodo = 5000;
+	int value = (periodo * duty) / 100;
+	int comp1 = (periodo - value) / 2;
+	int comp2 = comp1 + value;
 
-  // 2. Calcular o total de ticks que devem ficar desligados (OFF)
-  // Para 80% duty, total_off = 5000 - 4000 = 1000
-  uint32_t total_off_ticks = period - (period * duty_pct / 100);
-
-  // 3. Calcular a distribuição dos ticks desligados
-  // start_off_pct = 10 -> 100 ticks no início
-  uint32_t ticks_at_start = (total_off_ticks * start_off_pct) / 100;
-  // end_off_pct = 90 -> 900 ticks no final
-  uint32_t ticks_at_end = (total_off_ticks * (100 - start_off_pct)) / 100;
-
-  // 4. Definir os pontos de comutação (Compare Units)
-  // O sinal sobe após os ticks iniciais em OFF
-  uint32_t cmp1_val = ticks_at_start;
-  // O sinal desce antes dos ticks finais em OFF
-  uint32_t cmp2_val = period - ticks_at_end;
-
-  // 5. Garantir limites mínimos do HRTIM (mínimo 0x3 conforme especificações) [3]
-  if (cmp1_val < 3)
-    cmp1_val = 3;
-  if (cmp2_val >= period)
-    cmp2_val = period - 1;
 
   // 6. Atualizar os registros de comparação do Timer A [2]
-  __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_1, cmp1_val);
-  __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_2, cmp2_val);
+  __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_1, comp1);
+  __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_2, comp2);
 }
 
 // ADC
@@ -113,12 +96,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   {
     adc_last_value = adc_buffer[0];
 
-    count++;
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, RESET);
 
-    if(count == 4){
-    	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
-    	count = 0;
-    }
   }
 }
 
@@ -152,7 +132,7 @@ int main(void)
   while((__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) && (timeout-- > 0));
   if ( timeout < 0 )
   {
-  Error_Handler();
+  //Error_Handler();
   }
 #endif /* DUAL_CORE_BOOT_SYNC_SEQUENCE */
 /* USER CODE END Boot_Mode_Sequence_1 */
@@ -182,7 +162,7 @@ timeout = 0xFFFF;
 while((__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) == RESET) && (timeout-- > 0));
 if ( timeout < 0 )
 {
-Error_Handler();
+//Error_Handler();
 }
 #endif /* DUAL_CORE_BOOT_SYNC_SEQUENCE */
 /* USER CODE END Boot_Mode_Sequence_2 */
@@ -212,8 +192,9 @@ Error_Handler();
     // HRTIM
     HAL_HRTIM_WaveformOutputStart(&hhrtim, HRTIM_OUTPUT_TA1 | HRTIM_OUTPUT_TA2);
     HAL_HRTIM_WaveformCounterStart(&hhrtim, HRTIM_TIMERID_TIMER_A);
-    HAL_HRTIM_WaveformCounterStart(&hhrtim, HRTIM_TIMERID_MASTER);
 
+    __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_1, 1000);
+    __HAL_HRTIM_SETCOMPARE(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_2, 4000);
 
   /* USER CODE END 2 */
 
@@ -221,7 +202,11 @@ Error_Handler();
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	 //HRTIM_Update_Duty_Distributed(value, percent);
+	  for(int i = 1; i <= 99; i++){
+		  HRTIM_Update_Duty_Distributed(i);
+		  HAL_Delay(100);
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
