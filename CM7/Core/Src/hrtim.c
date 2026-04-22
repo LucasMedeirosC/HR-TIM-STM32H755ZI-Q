@@ -103,7 +103,7 @@ void MX_HRTIM_Init(void)
   {
     Error_Handler();
   }
-  pCompareCfg.CompareValue = 0x753;
+  pCompareCfg.CompareValue = 0x960;
   if (HAL_HRTIM_WaveformCompareConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_3, &pCompareCfg) != HAL_OK)
   {
     Error_Handler();

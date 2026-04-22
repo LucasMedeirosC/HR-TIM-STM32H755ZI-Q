@@ -69,7 +69,6 @@ void SystemClock_Config(void);
 
 // HRTIM
 float value = 0.0f;
-float percent = 50.0f;
 
 void HRTIM_Update_Duty_Distributed(uint32_t duty_pct)
 {
@@ -94,11 +93,18 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   if (hadc->Instance == ADC1)
   {
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
     adc_last_value = adc_buffer[0];
+  }
+}
 
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, SET);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, RESET);
-
+void HAL_HRTIM_Compare3EventCallback(HRTIM_HandleTypeDef *hhrtim, uint32_t TimerIdx)
+{
+  if ((hhrtim->Instance == HRTIM1) && (TimerIdx == HRTIM_TIMERINDEX_TIMER_A))
+  {
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
   }
 }
 
@@ -189,6 +195,9 @@ if ( timeout < 0 )
       Error_Handler();
     }
 
+    __HAL_HRTIM_TIMER_CLEAR_IT(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_TIM_IT_CMP3);
+    __HAL_HRTIM_TIMER_ENABLE_IT(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_TIM_IT_CMP3);
+
     // HRTIM
     HAL_HRTIM_WaveformOutputStart(&hhrtim, HRTIM_OUTPUT_TA1 | HRTIM_OUTPUT_TA2);
     HAL_HRTIM_WaveformCounterStart(&hhrtim, HRTIM_TIMERID_TIMER_A);
@@ -202,10 +211,13 @@ if ( timeout < 0 )
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HRTIM_Update_Duty_Distributed(value);
+	  /*
 	  for(int i = 1; i <= 99; i++){
 		  HRTIM_Update_Duty_Distributed(i);
 		  HAL_Delay(100);
 	  }
+	  */
 
     /* USER CODE END WHILE */
 
