@@ -25,6 +25,7 @@
 /* USER CODE END 0 */
 
 HRTIM_HandleTypeDef hhrtim;
+DMA_HandleTypeDef hdma_hrtim1_a;
 
 /* HRTIM init function */
 void MX_HRTIM_Init(void)
@@ -66,7 +67,7 @@ void MX_HRTIM_Init(void)
     Error_Handler();
   }
   pTimerCfg.InterruptRequests = HRTIM_TIM_IT_NONE;
-  pTimerCfg.DMARequests = HRTIM_TIM_DMA_NONE;
+  pTimerCfg.DMARequests = HRTIM_TIM_DMA_UPD;
   pTimerCfg.DMASrcAddress = 0x0000;
   pTimerCfg.DMADstAddress = 0x0000;
   pTimerCfg.DMASize = 0x1;
@@ -74,10 +75,10 @@ void MX_HRTIM_Init(void)
   pTimerCfg.StartOnSync = HRTIM_SYNCSTART_DISABLED;
   pTimerCfg.ResetOnSync = HRTIM_SYNCRESET_DISABLED;
   pTimerCfg.DACSynchro = HRTIM_DACSYNC_NONE;
-  pTimerCfg.PreloadEnable = HRTIM_PRELOAD_DISABLED;
-  pTimerCfg.UpdateGating = HRTIM_UPDATEGATING_INDEPENDENT;
+  pTimerCfg.PreloadEnable = HRTIM_PRELOAD_ENABLED;
+  pTimerCfg.UpdateGating = HRTIM_UPDATEGATING_DMABURST;
   pTimerCfg.BurstMode = HRTIM_TIMERBURSTMODE_MAINTAINCLOCK;
-  pTimerCfg.RepetitionUpdate = HRTIM_UPDATEONREPETITION_DISABLED;
+  pTimerCfg.RepetitionUpdate = HRTIM_UPDATEONREPETITION_ENABLED;
   pTimerCfg.PushPull = HRTIM_TIMPUSHPULLMODE_DISABLED;
   pTimerCfg.FaultEnable = HRTIM_TIMFAULTENABLE_NONE;
   pTimerCfg.FaultLock = HRTIM_TIMFAULTLOCK_READWRITE;
@@ -105,6 +106,10 @@ void MX_HRTIM_Init(void)
   }
   pCompareCfg.CompareValue = 0x960;
   if (HAL_HRTIM_WaveformCompareConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_3, &pCompareCfg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_HRTIM_BurstDMAConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_BURSTDMA_CMP1|HRTIM_BURSTDMA_CMP2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -168,6 +173,25 @@ void HAL_HRTIM_MspInit(HRTIM_HandleTypeDef* hrtimHandle)
     /* HRTIM1 clock enable */
     __HAL_RCC_HRTIM1_CLK_ENABLE();
 
+    /* HRTIM1 DMA Init */
+    /* HRTIM1_A Init */
+    hdma_hrtim1_a.Instance = DMA1_Stream1;
+    hdma_hrtim1_a.Init.Request = DMA_REQUEST_HRTIM_TIMER_A;
+    hdma_hrtim1_a.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_hrtim1_a.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_hrtim1_a.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_hrtim1_a.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_hrtim1_a.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_hrtim1_a.Init.Mode = DMA_CIRCULAR;
+    hdma_hrtim1_a.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_hrtim1_a.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_hrtim1_a) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(hrtimHandle,hdmaTimerA,hdma_hrtim1_a);
+
     /* HRTIM1 interrupt Init */
     HAL_NVIC_SetPriority(HRTIM1_TIMA_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(HRTIM1_TIMA_IRQn);
@@ -218,6 +242,9 @@ void HAL_HRTIM_MspDeInit(HRTIM_HandleTypeDef* hrtimHandle)
   /* USER CODE END HRTIM1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_HRTIM1_CLK_DISABLE();
+
+    /* HRTIM1 DMA DeInit */
+    HAL_DMA_DeInit(hrtimHandle->hdmaTimerA);
 
     /* HRTIM1 interrupt Deinit */
     HAL_NVIC_DisableIRQ(HRTIM1_TIMA_IRQn);
