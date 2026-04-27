@@ -68,7 +68,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 // HRTIM
-float value = 0.0f;
+float value = 50.0f;
 
 void HRTIM_Update_Duty_Distributed(uint32_t duty_pct)
 {

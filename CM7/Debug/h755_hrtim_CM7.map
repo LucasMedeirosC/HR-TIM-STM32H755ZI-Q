@@ -6026,7 +6026,7 @@ LOAD C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.ext
 .rel.dyn        0x0800a7d4        0x0
  .rel.iplt      0x0800a7d4        0x0 C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+dp/hard/crtbegin.o
 
-.data           0x24000000       0x10 load address 0x0800a7d4
+.data           0x24000000       0x14 load address 0x0800a7d4
                 0x24000000                        . = ALIGN (0x4)
                 0x24000000                        _sdata = .
  *(.data)
@@ -6037,37 +6037,37 @@ LOAD C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.ext
  .data.SystemD2Clock
                 0x24000004        0x4 ./Common/Src/system_stm32h7xx_dualcore_boot_cm4_cm7.o
                 0x24000004                SystemD2Clock
+ .data.value    0x24000008        0x4 ./Core/Src/main.o
+                0x24000008                value
  .data.uwTickPrio
-                0x24000008        0x4 ./Drivers/STM32H7xx_HAL_Driver/stm32h7xx_hal.o
-                0x24000008                uwTickPrio
+                0x2400000c        0x4 ./Drivers/STM32H7xx_HAL_Driver/stm32h7xx_hal.o
+                0x2400000c                uwTickPrio
  .data.uwTickFreq
-                0x2400000c        0x1 ./Drivers/STM32H7xx_HAL_Driver/stm32h7xx_hal.o
-                0x2400000c                uwTickFreq
+                0x24000010        0x1 ./Drivers/STM32H7xx_HAL_Driver/stm32h7xx_hal.o
+                0x24000010                uwTickFreq
  *(.RamFunc)
  *(.RamFunc*)
-                0x24000010                        . = ALIGN (0x4)
- *fill*         0x2400000d        0x3 
-                0x24000010                        _edata = .
+                0x24000014                        . = ALIGN (0x4)
+ *fill*         0x24000011        0x3 
+                0x24000014                        _edata = .
 
-.igot.plt       0x24000010        0x0 load address 0x0800a7e4
- .igot.plt      0x24000010        0x0 C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+dp/hard/crtbegin.o
-                0x24000010                        . = ALIGN (0x4)
+.igot.plt       0x24000014        0x0 load address 0x0800a7e8
+ .igot.plt      0x24000014        0x0 C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+dp/hard/crtbegin.o
+                0x24000014                        . = ALIGN (0x4)
 
-.bss            0x24000010      0x1e0 load address 0x0800a7e4
-                0x24000010                        _sbss = .
-                0x24000010                        __bss_start__ = _sbss
+.bss            0x24000014      0x1dc load address 0x0800a7e8
+                0x24000014                        _sbss = .
+                0x24000014                        __bss_start__ = _sbss
  *(.bss)
- .bss           0x24000010       0x1c C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+dp/hard/crtbegin.o
+ .bss           0x24000014       0x1c C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+dp/hard/crtbegin.o
  *(.bss*)
- .bss.hadc1     0x2400002c       0x64 ./Core/Src/adc.o
-                0x2400002c                hadc1
+ .bss.hadc1     0x24000030       0x64 ./Core/Src/adc.o
+                0x24000030                hadc1
  .bss.hdma_adc1
-                0x24000090       0x78 ./Core/Src/adc.o
-                0x24000090                hdma_adc1
- .bss.hhrtim    0x24000108       0xdc ./Core/Src/hrtim.o
-                0x24000108                hhrtim
- .bss.value     0x240001e4        0x4 ./Core/Src/main.o
-                0x240001e4                value
+                0x24000094       0x78 ./Core/Src/adc.o
+                0x24000094                hdma_adc1
+ .bss.hhrtim    0x2400010c       0xdc ./Core/Src/hrtim.o
+                0x2400010c                hhrtim
  .bss.adc_buffer
                 0x240001e8        0x2 ./Core/Src/main.o
                 0x240001e8                adc_buffer
@@ -6082,7 +6082,7 @@ LOAD C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.ext
                 0x240001f0                        __bss_end__ = _ebss
 
 ._user_heap_stack
-                0x240001f0      0x600 load address 0x0800a7e4
+                0x240001f0      0x600 load address 0x0800a7e8
                 0x240001f0                        . = ALIGN (0x8)
                 [!provide]                        PROVIDE (end = .)
                 0x240001f0                        PROVIDE (_end = .)
