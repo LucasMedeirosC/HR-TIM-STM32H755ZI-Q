@@ -4,6 +4,12 @@
 /Debug/
 /Release/
 /build/
+/CM4/Debug/
+/CM4/Release/
+/CM4/build/
+/CM7/Debug/
+/CM7/Release/
+/CM7/build/
 /*.launch
 /*.log
 /*.elf

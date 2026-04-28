@@ -68,9 +68,9 @@ void MX_HRTIM_Init(void)
   }
   pTimerCfg.InterruptRequests = HRTIM_TIM_IT_NONE;
   pTimerCfg.DMARequests = HRTIM_TIM_DMA_UPD;
-  pTimerCfg.DMASrcAddress = 0x0000;
-  pTimerCfg.DMADstAddress = 0x0000;
-  pTimerCfg.DMASize = 0x1;
+  pTimerCfg.DMASrcAddress = (uint32_t)hrtim_dma_buffer;
+  pTimerCfg.DMADstAddress = (uint32_t)&hhrtim.Instance->sCommonRegs.BDMADR;
+  pTimerCfg.DMASize = 0x2;
   pTimerCfg.HalfModeEnable = HRTIM_HALFMODE_DISABLED;
   pTimerCfg.StartOnSync = HRTIM_SYNCSTART_DISABLED;
   pTimerCfg.ResetOnSync = HRTIM_SYNCRESET_DISABLED;
