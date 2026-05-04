@@ -43,7 +43,7 @@ flowchart LR
   cmp3[CMP3 do Timer A] --> trig[HRTIM_ADCTRIGGEREVENT13_TIMERA_CMP3]
   trig --> adc[ADC1]
   adc --> dmaA[DMA1_Stream0]
-  dmaA --> adcbuf[adc_buffer[0]]
+  dmaA --> adcbuf[adc_buffer - index 0]
 ```
 
 ## 3) Configuração aplicada no `.ioc`
