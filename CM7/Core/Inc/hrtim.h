@@ -36,8 +36,6 @@ extern HRTIM_HandleTypeDef hhrtim;
 
 /* USER CODE BEGIN Private defines */
 
-extern uint32_t hrtim_dma_buffer[2];
-
 /* USER CODE END Private defines */
 
 void MX_HRTIM_Init(void);

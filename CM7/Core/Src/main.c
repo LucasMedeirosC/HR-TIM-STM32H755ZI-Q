@@ -61,11 +61,8 @@
 
 // HRTIM
 
-float value = 50.0f;
-
-__attribute__((aligned(32))) uint32_t hrtim_dma_buffer[2];
-
-// uint32_t *hrtim_dma_buffer = (uint32_t *)0x30000000;
+float value_a = 50.0f;
+float value_b = 50.0f;
 
 // ADC
 
@@ -80,30 +77,31 @@ void SystemClock_Config(void);
 // HRTIM
 void Iniciar_Modulacao_HRTIM(void)
 {
+  // Iniciar outputs
+  HAL_HRTIM_WaveformOutputStart(&hhrtim, HRTIM_OUTPUT_TA1 | HRTIM_OUTPUT_TA2 | HRTIM_OUTPUT_TB1 | HRTIM_OUTPUT_TB2);
 
-  // O resto do código de limpar D-Cache e ligar o DMA continua igual!
-  SCB_CleanDCache_by_Addr((uint32_t *)hrtim_dma_buffer, sizeof(hrtim_dma_buffer));
-
-  HAL_DMA_Start(hhrtim.hdmaTimerA, (uint32_t)hrtim_dma_buffer, (uint32_t)&hhrtim.Instance->sCommonRegs.BDMADR, 2);
-
-  __HAL_HRTIM_TIMER_ENABLE_DMA(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_TIM_DMA_UPD);
-
-  HAL_HRTIM_WaveformOutputStart(&hhrtim, HRTIM_OUTPUT_TA1 | HRTIM_OUTPUT_TA2);
+  // Iniciar contadores sincronizados (Master, Timer A e Timer B)
+  HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_MASTER);
   HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_TIMER_A);
+  HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_TIMER_B);
 }
 
-void HRTIM_Update_Duty_Distributed(uint32_t duty_pct)
+void HRTIM_Update_Duty_Distributed(uint32_t duty_pct_a, uint32_t duty_pct_b)
 {
-  int duty = 100 - duty_pct;
+  int duty = 100 - duty_pct_a;
   int periodo = 5000;
   int value = (periodo * duty) / 100;
   int comp1 = (periodo - value) / 2;
   int comp2 = comp1 + value;
+  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_A].CMP1xR = comp1;
+  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_A].CMP2xR = comp2;
 
-  // 6. Atualizar os registros de comparação do Timer A [2]
-  hrtim_dma_buffer[0] = comp1;
-  hrtim_dma_buffer[1] = comp2;
-  SCB_CleanDCache_by_Addr((uint32_t *)hrtim_dma_buffer, sizeof(hrtim_dma_buffer));
+  duty = 100 - duty_pct_b;
+  value = (periodo * duty) / 100;
+  comp1 = (periodo - value) / 2;
+  comp2 = comp1 + value;
+  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_B].CMP1xR = comp1;
+  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_B].CMP2xR = comp2;
 }
 
 // ADC
@@ -230,15 +228,21 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float old_value = 0.0f;
+
+  float old_value_a = -1.0f;
+  float old_value_b = -1.0f;
 
   while (1)
   {
-	  if(old_value != value){
-		  HRTIM_Update_Duty_Distributed(value);
-		  old_value = value;
-	  }
+    // SÓ ENTRA AQUI SE VOCÊ DIGITAR UM VALOR NOVO NA IDE!
+    if ((old_value_a != value_a) || (old_value_b != value_b))
+    {
+      HRTIM_Update_Duty_Distributed(value_a, value_b);
 
+      // Atualiza o estado
+      old_value_a = value_a;
+      old_value_b = value_b;
+    }
     /*
     for(int i = 1; i <= 99; i++){
       HRTIM_Update_Duty_Distributed(i);
