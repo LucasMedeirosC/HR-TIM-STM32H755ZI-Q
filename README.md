@@ -1,32 +1,32 @@
-# HRTIM com update de CMP1 e CMP2 via DMA
+# HRTIM com atualização de CMP1 e CMP2 via DMA
 
-Este documento resume a configuracao atual do sistema no core CM7 para atualizar os comparadores `CMP1` e `CMP2` do Timer A via burst DMA do HRTIM, usando os parametros aplicados no `h755_hrtim.ioc`.
+Este documento resume a configuração atual do sistema no core CM7 para atualizar os comparadores `CMP1` e `CMP2` do Timer A via burst DMA do HRTIM, usando os parâmetros aplicados no `h755_hrtim.ioc`.
 
 ## 1) Arquivos principais envolvidos
 
 - `CM7/Core/Inc/stm32h7xx_hal_conf.h`
-  - Habilitou o modulo HAL do HRTIM:
+  - Habilitou o módulo HAL do HRTIM:
   - `#define HAL_HRTIM_MODULE_ENABLED`
 - `CM7/Core/Inc/hrtim.h`
   - Declarou o buffer de DMA compartilhado com `main.c`:
   - `extern uint32_t hrtim_dma_buffer[2];`
 - `CM7/Core/Src/hrtim.c`
-  - Configura o HRTIM1, o burst DMA do Timer A e as saidas TA1/TA2.
+  - Configura o HRTIM1, o burst DMA do Timer A e as saídas TA1/TA2.
 - `CM7/Core/Src/main.c`
-  - Mantem o buffer `hrtim_dma_buffer[2]` com os novos valores de `CMP1` e `CMP2`.
-  - Inicializa o HRTIM, limpa o D-Cache do buffer e arma a transferencia DMA.
+  - Mantém o buffer `hrtim_dma_buffer[2]` com os novos valores de `CMP1` e `CMP2`.
+  - Inicializa o HRTIM, limpa o D-Cache do buffer e arma a transferência DMA.
 
-## 2) Fluxo de atualizacao via DMA
+## 2) Fluxo de atualização via DMA
 
-O sistema atual nao escreve diretamente em `CMP1` e `CMP2` a cada ciclo. Em vez disso:
+O sistema atual não escreve diretamente em `CMP1` e `CMP2` a cada ciclo. Em vez disso:
 
-1. `main.c` calcula os valores desejados de comparacao.
-2. Esses valores sao gravados em `hrtim_dma_buffer[0]` e `hrtim_dma_buffer[1]`.
-3. Antes de iniciar a transferencia, o CM7 limpa o D-Cache do buffer com `SCB_CleanDCache_by_Addr(...)`.
+1. `main.c` calcula os valores desejados de comparação.
+2. Esses valores são gravados em `hrtim_dma_buffer[0]` e `hrtim_dma_buffer[1]`.
+3. Antes de iniciar a transferência, o CM7 limpa o D-Cache do buffer com `SCB_CleanDCache_by_Addr(...)`.
 4. O HRTIM usa burst DMA para copiar os dois valores para `BDMADR`, atualizando os registros do Timer A.
-5. O DMA trabalha em modo circular, entao a atualizacao pode ser repetida continuamente.
+5. O DMA trabalha em modo circular, então a atualização pode ser repetida continuamente.
 
-> No CM7, com D-Cache habilitado, manter a limpeza do cache antes da transferencia DMA e essencial para o hardware enxergar os valores novos.
+> No CM7, com D-Cache habilitado, manter a limpeza do cache antes da transferência DMA é essencial para o hardware enxergar os valores novos.
 
 ### Diagrama do fluxo
 
@@ -46,7 +46,7 @@ flowchart LR
   dmaA --> adcbuf[adc_buffer[0]]
 ```
 
-## 3) Configuracao aplicada no `.ioc`
+## 3) Configuração aplicada no `.ioc`
 
 ### HRTIM / Timer A
 
@@ -104,32 +104,32 @@ flowchart LR
 - `Dma.ADC1.0.Mode = DMA_CIRCULAR`
 - `Dma.ADC1.0.Priority = DMA_PRIORITY_HIGH`
 
-O disparo do ADC e sincronizado com o evento `HRTIM_ADCTRIGGEREVENT13_TIMERA_CMP3`, configurado em `HRTIM.ADCTrigger1_Source1`. Na pratica, cada vez que o Timer A atinge `CMP3`, o HRTIM gera o trigger para iniciar uma conversao do ADC1.
+O disparo do ADC é sincronizado com o evento `HRTIM_ADCTRIGGEREVENT13_TIMERA_CMP3`, configurado em `HRTIM.ADCTrigger1_Source1`. Na prática, cada vez que o Timer A atinge `CMP3`, o HRTIM gera o trigger para iniciar uma conversão do ADC1.
 
-No codigo:
+No código:
 
 1. `MX_ADC1_Init()` configura o canal 19, o trigger externo e o DMA circular.
-2. `Iniciar_ADC_DMA()` faz a calibracao e chama `HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buffer, 1)`.
-3. As amostras sao armazenadas em `adc_buffer[0]`.
+2. `Iniciar_ADC_DMA()` faz a calibração e chama `HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buffer, 1)`.
+3. As amostras são armazenadas em `adc_buffer[0]`.
 
 Assim, o caminho do ADC fica acoplado ao ciclo do PWM e a leitura acontece sempre sincronizada com o instante definido pelo `CMP3`.
 
-## 4) Calculo da frequencia e periodo
+## 4) Cálculo da frequência e período
 
 Objetivo: 40 kHz com clock de 200 MHz.
 
-Formula:
+Fórmula:
 
-- `Periodo = f_clk / f_pwm`
-- `Periodo = 200.000.000 / 40.000 = 5.000`
+- `Período = f_clk / f_pwm`
+- `Período = 200.000.000 / 40.000 = 5.000`
 
 Valor configurado em `hrtim.c`:
 
 - `pTimeBaseCfg.Period = 0x1388` (decimal 5000)
 
-## 5) Calculo dos comparadores (10% e 90%)
+## 5) Cálculo dos comparadores (10% e 90%)
 
-Com periodo total de 5000:
+Com período total de 5000:
 
 - Compare 1 (10%):
   - `5000 x 0,10 = 500`
@@ -143,7 +143,7 @@ Valores aplicados em `hrtim.c`:
 - `pCompareCfg.CompareValue = 0x1F4` para `HRTIM_COMPAREUNIT_1`
 - `pCompareCfg.CompareValue = 0x1194` para `HRTIM_COMPAREUNIT_2`
 
-## 6) Calculo do dead time (200 ns)
+## 6) Cálculo do dead time (200 ns)
 
 Clock do HRTIM: 200 MHz
 
@@ -164,26 +164,26 @@ Valores configurados em `hrtim.c`:
 
 No Timer A:
 
-- Saida TA1:
+- Saída TA1:
   - `SetSource = HRTIM_OUTPUTSET_TIMCMP1`
   - `ResetSource = HRTIM_OUTPUTRESET_TIMCMP2`
-- Saida TA2:
+- Saída TA2:
   - `SetSource = HRTIM_OUTPUTSET_NONE`
   - `ResetSource = HRTIM_OUTPUTRESET_NONE`
-  - Escolha intencional: com `DeadTimeInsertion` habilitado no Timer A, o TA2 e utilizado como complementar do TA1 com insercao de dead time.
+  - Escolha intencional: com `DeadTimeInsertion` habilitado no Timer A, o TA2 é utilizado como complementar do TA1 com inserção de dead time.
 
-Interpretacao da TA1:
+Interpretação da TA1:
 
-- Sobe no compare 1 (10% do periodo) e desce no compare 2 (90% do periodo).
-- Isso gera pulso ativo de 80% do periodo, deslocado dentro do ciclo (de 10% ate 90%).
+- Sobe no compare 1 (10% do período) e desce no compare 2 (90% do período).
+- Isso gera pulso ativo de 80% do período, deslocado dentro do ciclo (de 10% até 90%).
 
-Interpretacao da TA2:
+Interpretação da TA2:
 
-- Embora esteja com Set/Reset em NONE, ela foi iniciada para operar como saida complementar da TA1 quando a unidade de dead time do Timer A esta ativa.
+- Embora esteja com Set/Reset em NONE, ela foi iniciada para operar como saída complementar da TA1 quando a unidade de dead time do Timer A está ativa.
 
-## 8) GPIO e clock do periferico
+## 8) GPIO e clock do periférico
 
-Configuracoes realizadas no MSP (`HAL_HRTIM_MspInit` e `HAL_HRTIM_MspPostInit`):
+Configurações realizadas no MSP (`HAL_HRTIM_MspInit` e `HAL_HRTIM_MspPostInit`):
 
 - Clock do HRTIM1 habilitado.
 - Clock de GPIOC habilitado.
@@ -192,9 +192,9 @@ Configuracoes realizadas no MSP (`HAL_HRTIM_MspInit` e `HAL_HRTIM_MspPostInit`):
   - PC7 -> HRTIM_CHA2
   - Alternate Function: `GPIO_AF1_HRTIM1`
 
-## 9) Sequencia de inicializacao na `main`
+## 9) Sequência de inicialização na `main`
 
-No `CM7/Core/Src/main.c`, a sequencia relevante ficou:
+No `CM7/Core/Src/main.c`, a sequência relevante ficou:
 
 1. `HAL_Init()`
 2. `SystemClock_Config()`
@@ -210,15 +210,15 @@ Dentro de `Iniciar_Modulacao_HRTIM()`:
 
 1. limpa o D-Cache do buffer `hrtim_dma_buffer`
 2. inicia o DMA apontando de `hrtim_dma_buffer` para `BDMADR`
-3. habilita a requisicao DMA do Timer A
-4. inicia as saidas `TA1` e `TA2`
+3. habilita a requisição DMA do Timer A
+4. inicia as saídas `TA1` e `TA2`
 5. inicia o contador do Timer A
 
-Ou seja: primeiro o buffer e atualizado em memoria, depois o HRTIM le esses dois valores por DMA e atualiza `CMP1` e `CMP2` de forma ciclica.
+Ou seja: primeiro o buffer é atualizado em memória, depois o HRTIM lê esses dois valores por DMA e atualiza `CMP1` e `CMP2` de forma cíclica.
 
 ## 10) Como atualizar `CMP1` e `CMP2` em runtime
 
-Para mudar o duty em tempo de execucao, basta recalcular os dois valores e gravar no buffer:
+Para mudar o duty em tempo de execução, basta recalcular os dois valores e gravar no buffer:
 
 ```c
 hrtim_dma_buffer[0] = novo_cmp1;
@@ -226,13 +226,13 @@ hrtim_dma_buffer[1] = novo_cmp2;
 SCB_CleanDCache_by_Addr((uint32_t *)hrtim_dma_buffer, sizeof(hrtim_dma_buffer));
 ```
 
-Se o fluxo de DMA estiver em execucao, os novos valores vao ser consumidos na proxima transferencia do burst DMA.
+Se o fluxo de DMA estiver em execução, os novos valores vão ser consumidos na próxima transferência do burst DMA.
 
-## 11) Referencias diretas no codigo
+## 11) Referências diretas no código
 
-- `CM7/Core/Inc/stm32h7xx_hal_conf.h`: habilitacao do modulo HRTIM.
-- `CM7/Core/Src/hrtim.c`: configuracao do burst DMA, periodo, comparadores, dead time e saidas.
-- `CM7/Core/Src/main.c`: buffer de DMA, limpeza de cache e sequencia de start.
+- `CM7/Core/Inc/stm32h7xx_hal_conf.h`: habilitação do módulo HRTIM.
+- `CM7/Core/Src/hrtim.c`: configuração do burst DMA, período, comparadores, dead time e saídas.
+- `CM7/Core/Src/main.c`: buffer de DMA, limpeza de cache e sequência de start.
 
 ## 12) Como alterar a forma do PWM (passo a passo)
 
@@ -241,7 +241,7 @@ Se quiser alterar a forma do PWM em runtime, atualize os dois valores do buffer 
 1. Crie e zere a estrutura `HRTIM_CompareCfgTypeDef`.
 2. Calcule `CMP1` e `CMP2`.
 3. Grave os valores em `hrtim_dma_buffer[0]` e `hrtim_dma_buffer[1]`.
-4. Chame `SCB_CleanDCache_by_Addr(...)` antes da proxima transferencia DMA.
+4. Chame `SCB_CleanDCache_by_Addr(...)` antes da próxima transferência DMA.
 
 Exemplo:
 
@@ -251,6 +251,6 @@ hrtim_dma_buffer[1] = 4500;
 SCB_CleanDCache_by_Addr((uint32_t *)hrtim_dma_buffer, sizeof(hrtim_dma_buffer));
 ```
 
-Observacao:
+Observação:
 
 - Para manter o formato atual da onda, ajuste `CMP1` e `CMP2` de forma coordenada.
