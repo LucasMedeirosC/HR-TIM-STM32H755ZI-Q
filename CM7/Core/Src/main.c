@@ -26,6 +26,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "LI_Measures.h"
+#include "LI_Actuators.h"
+#include <stdbool.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,79 +68,11 @@
 float value_a = 50.0f;
 float value_b = 50.0f;
 
-// ADC
-
-volatile uint16_t adc_buffer[1] = {0};
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
-// HRTIM
-void Iniciar_Modulacao_HRTIM(void)
-{
-  // Iniciar outputs
-  HAL_HRTIM_WaveformOutputStart(&hhrtim, HRTIM_OUTPUT_TA1 | HRTIM_OUTPUT_TA2 | HRTIM_OUTPUT_TB1 | HRTIM_OUTPUT_TB2);
-
-  // Iniciar contadores sincronizados (Master, Timer A e Timer B)
-  HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_MASTER);
-  HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_TIMER_A);
-  HAL_HRTIM_WaveformCountStart(&hhrtim, HRTIM_TIMERID_TIMER_B);
-}
-
-void HRTIM_Update_Duty_Distributed(uint32_t duty_pct_a, uint32_t duty_pct_b)
-{
-  int duty = 100 - duty_pct_a;
-  int periodo = 5000;
-  int value = (periodo * duty) / 100;
-  int comp1 = (periodo - value) / 2;
-  int comp2 = comp1 + value;
-  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_A].CMP1xR = comp1;
-  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_A].CMP2xR = comp2;
-
-  duty = 100 - duty_pct_b;
-  value = (periodo * duty) / 100;
-  comp1 = (periodo - value) / 2;
-  comp2 = comp1 + value;
-  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_B].CMP1xR = comp1;
-  hhrtim.Instance->sTimerxRegs[HRTIM_TIMERINDEX_TIMER_B].CMP2xR = comp2;
-}
-
-// ADC
-void Iniciar_ADC_DMA(void)
-{
-  if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buffer, 1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/*
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
-  if (hadc->Instance == ADC1)
-  {
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-  }
-}
-
-void HAL_HRTIM_Compare3EventCallback(HRTIM_HandleTypeDef *hhrtim, uint32_t TimerIdx)
-{
-  if ((hhrtim->Instance == HRTIM1) && (TimerIdx == HRTIM_TIMERINDEX_TIMER_A))
-  {
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-  }
-}
-*/
 
 /* USER CODE END PFP */
 
@@ -217,12 +153,26 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // ADC
-  Iniciar_ADC_DMA();
+  if (LI_start_adc_dma() != STATUS_OK)
+  {
+    Error_Handler();
+  }
 
   // HRTIM
-  //__HAL_HRTIM_TIMER_CLEAR_IT(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_TIM_IT_CMP3);
-  //__HAL_HRTIM_TIMER_ENABLE_IT(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_TIM_IT_CMP3);
-  Iniciar_Modulacao_HRTIM();
+  if (LI_initialize_timers() != STATUS_OK)
+  {
+    Error_Handler();
+  }
+
+  if (LI_start_timer(TIMER_A) != STATUS_OK)
+  {
+    Error_Handler();
+  }
+
+  if (LI_start_timer(TIMER_B) != STATUS_OK)
+  {
+    Error_Handler();
+  }
 
   /* USER CODE END 2 */
 
@@ -231,24 +181,39 @@ int main(void)
 
   float old_value_a = -1.0f;
   float old_value_b = -1.0f;
+  uint32_t ultimo_toggle_timer_a = HAL_GetTick();
+  bool timer_a_ligado = true;
 
   while (1)
   {
-    // SÓ ENTRA AQUI SE VOCÊ DIGITAR UM VALOR NOVO NA IDE!
-    if ((old_value_a != value_a) || (old_value_b != value_b))
+    if ((HAL_GetTick() - ultimo_toggle_timer_a) >= 1000U)
     {
-      HRTIM_Update_Duty_Distributed(value_a, value_b);
+      if (timer_a_ligado)
+      {
+        (void)LI_stop_timer(TIMER_A);
+        // LI_start_timer(TIMER_B);
+        timer_a_ligado = false;
+      }
+      else
+      {
+        (void)LI_start_timer(TIMER_A);
+        // LI_stop_timer(TIMER_B);
+        timer_a_ligado = true;
+      }
+      ultimo_toggle_timer_a = HAL_GetTick();
+    }
 
-      // Atualiza o estado
+    if (old_value_a != value_a)
+    {
+      (void)LI_hrtim_update_duty_channel(TIMER_A, (uint32_t)value_a);
       old_value_a = value_a;
+    }
+
+    if (old_value_b != value_b)
+    {
+      (void)LI_hrtim_update_duty_channel(TIMER_B, (uint32_t)value_b);
       old_value_b = value_b;
     }
-    /*
-    for(int i = 1; i <= 99; i++){
-      HRTIM_Update_Duty_Distributed(i);
-      HAL_Delay(100);
-    }
-    */
 
     /* USER CODE END WHILE */
 
