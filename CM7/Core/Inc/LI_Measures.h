@@ -12,6 +12,9 @@
 
 #include "stm32h7xx_hal.h"
 
+/**
+ * @brief Standard status codes used by the LI modules.
+ */
 typedef enum
 {
     STATUS_OK = 0,
@@ -25,12 +28,15 @@ typedef enum
     STATUS_FAULT_LATCHED
 } status_t;
 
+/**
+ * @brief Snapshot of the measurement module state.
+ */
 typedef struct
 {
-    status_t last_error;
-    uint32_t error_count;
-    uint8_t is_ready;
-    uint8_t is_running;
+    status_t last_error;   /**< Last error reported by the module. */
+    uint32_t error_count;  /**< Number of errors reported since startup. */
+    uint8_t is_ready;      /**< Non-zero when the module has been initialized. */
+    uint8_t is_running;    /**< Non-zero when DMA acquisition is active. */
 } li_measures_status_t;
 
 /**

@@ -186,6 +186,8 @@ int main(void)
 
   while (1)
   {
+    
+    /*
     if ((HAL_GetTick() - ultimo_toggle_timer_a) >= 1000U)
     {
       if (timer_a_ligado)
@@ -202,18 +204,21 @@ int main(void)
       }
       ultimo_toggle_timer_a = HAL_GetTick();
     }
+    */
 
     if (old_value_a != value_a)
     {
-      (void)LI_hrtim_update_duty_channel(TIMER_A, (uint32_t)value_a);
+      (void)LI_hrtim_update_duty_channel(TIMER_A, value_a);
       old_value_a = value_a;
     }
 
     if (old_value_b != value_b)
     {
-      (void)LI_hrtim_update_duty_channel(TIMER_B, (uint32_t)value_b);
+      (void)LI_hrtim_update_duty_channel(TIMER_B, value_b);
       old_value_b = value_b;
     }
+
+    (void)LI_pwm_control();
 
     /* USER CODE END WHILE */
 
