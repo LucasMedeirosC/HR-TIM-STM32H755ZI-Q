@@ -153,23 +153,23 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // ADC
-  if (LI_start_adc_dma() != STATUS_OK)
+  if (LI_start_adc_dma() != LI_MEASURES_STATUS_OK)
   {
     Error_Handler();
   }
 
   // HRTIM
-  if (LI_initialize_timers() != STATUS_OK)
+  if (LI_initialize_timers() != LI_ACTUATORS_STATUS_OK)
   {
     Error_Handler();
   }
 
-  if (LI_start_timer(TIMER_A) != STATUS_OK)
+  if (LI_start_timer(TIMER_A) != LI_ACTUATORS_STATUS_OK)
   {
     Error_Handler();
   }
 
-  if (LI_start_timer(TIMER_B) != STATUS_OK)
+  if (LI_start_timer(TIMER_B) != LI_ACTUATORS_STATUS_OK)
   {
     Error_Handler();
   }

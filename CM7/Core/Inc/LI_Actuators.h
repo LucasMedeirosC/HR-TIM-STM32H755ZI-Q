@@ -13,12 +13,26 @@
 
 #include <stdint.h>
 
-#include "LI_Measures.h"
-
 /**
  * @brief Number of PWM channels used by the system.
  */
 #define PWM_CHANNELS 5U
+
+/**
+ * @brief Status codes for the actuator module.
+ */
+typedef enum
+{
+    LI_ACTUATORS_STATUS_OK = 0,
+    LI_ACTUATORS_STATUS_INVALID_ARG,
+    LI_ACTUATORS_STATUS_NOT_READY,
+    LI_ACTUATORS_STATUS_BUSY,
+    LI_ACTUATORS_STATUS_TIMEOUT,
+    LI_ACTUATORS_STATUS_HW_ERROR,
+    LI_ACTUATORS_STATUS_OVERFLOW,
+    LI_ACTUATORS_STATUS_COMM_ERROR,
+    LI_ACTUATORS_STATUS_FAULT_LATCHED
+} status_actuators_t;
 
 /**
  * @brief Logical PWM channels used by the control layer.
@@ -54,7 +68,7 @@ typedef struct
  */
 typedef struct
 {
-    status_t last_error;
+    status_actuators_t last_error;
     uint32_t error_count;
     uint8_t is_ready;
     uint8_t is_running;
@@ -64,21 +78,21 @@ typedef struct
  * @brief Initialize the HRTIM actuator module.
  * @return STATUS_OK on success, STATUS_HW_ERROR if HAL startup fails.
  */
-status_t LI_initialize_timers(void);
+status_actuators_t LI_initialize_timers(void);
 
 /**
  * @brief Start one HRTIM channel and its outputs.
  * @param[in] channel PWM channel identifier.
  * @return STATUS_OK on success, STATUS_INVALID_ARG for an invalid channel, STATUS_NOT_READY if the module is not initialized, or STATUS_HW_ERROR on HAL failure.
  */
-status_t LI_start_timer(pwm_channel_t channel);
+status_actuators_t LI_start_timer(pwm_channel_t channel);
 
 /**
  * @brief Stop one HRTIM channel and its outputs.
  * @param[in] channel PWM channel identifier.
  * @return STATUS_OK on success, STATUS_INVALID_ARG for an invalid channel, STATUS_NOT_READY if the module is not initialized, or STATUS_HW_ERROR on HAL failure.
  */
-status_t LI_stop_timer(pwm_channel_t channel);
+status_actuators_t LI_stop_timer(pwm_channel_t channel);
 
 /**
  * @brief Update the duty cycle for one HRTIM channel.
@@ -86,7 +100,7 @@ status_t LI_stop_timer(pwm_channel_t channel);
  * @param[in] duty_pct Duty cycle in percent, from 0.0f to 100.0f.
  * @return STATUS_OK on success, STATUS_INVALID_ARG for invalid arguments, STATUS_NOT_READY if the module is not initialized, or STATUS_HW_ERROR on HAL failure.
  */
-status_t LI_hrtim_update_duty_channel(pwm_channel_t channel, float duty_pct);
+status_actuators_t LI_hrtim_update_duty_channel(pwm_channel_t channel, float duty_pct);
 
 /**
  * @brief Update all PWM channels from the internal parameter array.
@@ -96,20 +110,20 @@ status_t LI_hrtim_update_duty_channel(pwm_channel_t channel, float duty_pct);
  *
  * @return STATUS_OK on success, STATUS_NOT_READY if the module is not initialized.
  */
-status_t LI_pwm_control(void);
+status_actuators_t LI_pwm_control(void);
 
 /**
  * @brief Get the PWM parameters snapshot for all channels.
  * @param[out] out_data Destination buffer with PWM_CHANNELS entries.
  * @return STATUS_OK on success, STATUS_INVALID_ARG if out_data is NULL.
  */
-status_t LI_actuators_get_status(pwm_parameters_t *out_data);
+status_actuators_t LI_actuators_get_status(pwm_parameters_t *out_data);
 
 /**
  * @brief Clear the actuator module error state.
  * @return STATUS_OK on success.
  */
-status_t LI_actuators_clear_errors(void);
+status_actuators_t LI_actuators_clear_errors(void);
 
 /**
  * @brief Read the PWM parameters array used by the module.
